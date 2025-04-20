@@ -1,69 +1,63 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 
-function QuestionForm({ onAddQuestion,  setPage }) {
+function QuestionForm(props) {
   const [formData, setFormData] = useState({
     prompt: "",
     answer1: "",
     answer2: "",
     answer3: "",
     answer4: "",
-    correctIndex: 0,
+    correctIndex: 0,  
   });
 
-  const isMounted = useRef(true);
-
-  useEffect(() => {
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
-
   function handleChange(event) {
-    const { name, value } = event.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    // updating the right input in the state
+    setFormData({
+      ...formData,
+      [event.target.name]: event.target.value,
+    });
   }
 
   function handleSubmit(event) {
     event.preventDefault();
 
-    const newQuestion = {
-      prompt: formData.prompt,
-      answers: [
-        formData.answer1,
-        formData.answer2,
-        formData.answer3,
-        formData.answer4,
-      ],
-      correctIndex: parseInt(formData.correctIndex),
-    };
+    // placed answers into one array 
+    const answers = [
+      formData.answer1,
+      formData.answer2,
+      formData.answer3,
+      formData.answer4,
+    ];
+
+    // Ensure the correctIndex is a number, not a string --->parsing it as int
+    const correctIndex = parseInt(formData.correctIndex, 10);
 
     fetch("http://localhost:4000/questions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(newQuestion),
+      body: JSON.stringify({
+        prompt: formData.prompt,
+        answers: answers,
+        correctIndex: correctIndex, 
+      }),
     })
-      .then((res) => res.json())
+      .then((response) => response.json())
       .then((data) => {
-        if (isMounted.current) {
-          onAddQuestion(data);
-          setPage("List"); // Update App state
-          // Reset form
-          setFormData({
-            prompt: "",
-            answer1: "",
-            answer2: "",
-            answer3: "",
-            answer4: "",
-            correctIndex: 0,
-          });
-        }
+        setFormData({
+          prompt: "",
+          answer1: "",
+          answer2: "",
+          answer3: "",
+          answer4: "",
+          correctIndex: 0,
+        });
+        console.log('Response:', data);
       })
-      .catch((err) => console.error("Error posting question:", err));
+      .catch((error) => {
+        console.error("Error:", error);
+      });
   }
 
   return (

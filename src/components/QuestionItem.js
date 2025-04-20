@@ -1,6 +1,11 @@
 import React from "react";
 
-function QuestionItem({ question, onDeleteQuestion, onUpdateQuestion }) {
+
+function QuestionItem({ question,onDelete }) {
+  if (!question || !Array.isArray(question.answers)) {
+    return null; // end program
+  }
+
   const { id, prompt, answers, correctIndex } = question;
 
   const options = answers.map((answer, index) => (
@@ -8,46 +13,33 @@ function QuestionItem({ question, onDeleteQuestion, onUpdateQuestion }) {
       {answer}
     </option>
   ));
-
-  function handleDeleteClick() {
+  function handleDelete() {
     fetch(`http://localhost:4000/questions/${id}`, {
       method: "DELETE",
     })
-      .then((res) => {
-        if (res.ok) {
-          onDeleteQuestion(id);
-        } else {
-          console.error("Failed to delete question");
-        }
+      .then((response) => {
+        if (!response.ok) throw new Error("Failed to delete question");
+        return response.json();
       })
-      .catch((err) => console.error("Network error:", err));
+      .then(() => {
+        console.log("Deleted!");
+        if (onDelete) onDelete(id); // notify parent
+      })
+      .catch((error) => console.error("Delete error:", error));
   }
-  function handleSelectChange(e) {
-    const newCorrectIndex = parseInt(e.target.value);
 
-    fetch(`http://localhost:4000/questions/${id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ correctIndex: newCorrectIndex }),
-    })
-      .then((res) => res.json())
-      .then((updatedQuestion) => {
-        onUpdateQuestion(updatedQuestion);
-      });
-  }
   return (
     <li>
       <h4>Question {id}</h4>
       <h5>Prompt: {prompt}</h5>
       <label>
         Correct Answer:
-        <select defaultValue={correctIndex} onChange={handleSelectChange}>{options}</select>
+        <select defaultValue={correctIndex}>{options}</select>
       </label>
-      <button  onClick={handleDeleteClick}>Delete Question</button>
+      <button onClick={handleDelete}>Delete Question</button>
     </li>
   );
 }
+
 
 export default QuestionItem;
